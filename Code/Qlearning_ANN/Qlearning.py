@@ -1,6 +1,9 @@
-import pygame
 import random
+import pygame
 import numpy as np
+import csv
+import os
+import time
 
 # Constants
 WINDOW_SIZE = 800
@@ -13,7 +16,15 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 
-class SnakeGame:
+# Q-learning parameters
+alpha = 0.1
+gamma = 0.9
+epsilon = 1.0
+epsilon_decay = 0.995
+epsilon_min = 0.01
+num_episodes = 1000
+
+class Qlearning:
     def __init__(self):
         self.reset()
 
@@ -99,89 +110,93 @@ class SnakeGame:
             reward += 1
             
         return self._get_state(), reward, False
+    
+    def get_state_index(self, state):
+        return int("".join(map(str, state)), 2)
+    
+    def QlearningTraining(self):
+        global alpha, gamma, epsilon, epsilon_decay, epsilon_min, num_episodes
+        # Q-table
+        state_size = 12
+        action_size = 4
+        q_table = np.zeros((2 ** state_size, action_size))
+
+        # Training the model
+        for episode in range(num_episodes):
+            state = self.reset()
+            state_index = self.get_state_index(state)
+            total_reward = 0
+            done = False
+
+            while not done:
+                if random.uniform(0, 1) < epsilon:
+                    action = random.randint(0, action_size - 1)
+                else:
+                    action = np.argmax(q_table[state_index])
+
+                next_state, reward, done = self.step(action)
+                next_state_index = self.get_state_index(next_state)
+
+                # Update Q-value
+                q_table[state_index, action] = (q_table[state_index, action] +
+                                                alpha * (reward + gamma * np.max(q_table[next_state_index]) - q_table[state_index, action]))
+
+                state_index = next_state_index
+                total_reward += reward
+
+            epsilon = max(epsilon_min, epsilon * epsilon_decay)
+
+            print(f"Episode {episode + 1}: Total Reward = {total_reward}: Total Score = {self.score}")
+
+        os.makedirs('Code/Qlearning_ANN/Qlearning_data', exist_ok=True)
+        with open('Code/Qlearning_ANN/Qlearning_data/Qlearning.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(q_table)
 
     def render(self):
-        screen.fill(BLACK)
+        self.screen.fill(BLACK)
         for segment in self.snake:
-            pygame.draw.rect(screen, GREEN, (*tuple(x * WINDOW_SIZE/GRID_SIZE for x in segment), WINDOW_SIZE/GRID_SIZE, WINDOW_SIZE/GRID_SIZE))
-        pygame.draw.rect(screen, RED, (*tuple(x * WINDOW_SIZE/GRID_SIZE for x in self.food), WINDOW_SIZE/GRID_SIZE, WINDOW_SIZE/GRID_SIZE))
+            pygame.draw.rect(self.screen, GREEN, (*tuple(x * WINDOW_SIZE/GRID_SIZE for x in segment), WINDOW_SIZE/GRID_SIZE, WINDOW_SIZE/GRID_SIZE))
+        pygame.draw.rect(self.screen, RED, (*tuple(x * WINDOW_SIZE/GRID_SIZE for x in self.food), WINDOW_SIZE/GRID_SIZE, WINDOW_SIZE/GRID_SIZE))
         pygame.display.flip()
 
-# Q-learning parameters
-alpha = 0.1
-gamma = 0.9
-epsilon = 1.0
-epsilon_decay = 0.995
-epsilon_min = 0.01
-num_episodes = 1000
+    def openQtableFile(self):
+        q_table = []
+        with open('Code/Qlearning_ANN/Qlearning_data/Qlearning.csv', 'r') as fichier:
+            reader = csv.reader(fichier)
+            for row in reader:
+                q_table.append(list(map(float, row)))  # Convertit les valeurs en float
+        return q_table
+    
+    def startGameQlearning(self):
+        # Initialize pygame
+        pygame.init()
+        self.screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
+        self.clock = pygame.time.Clock()
 
-# Q-table
-state_size = 12
-action_size = 4
-q_table = np.zeros((2 ** state_size, action_size))
+        # Run the trained model
+        state = self.reset()
+        state_index = self.get_state_index(state)
+        total_reward = 0
+        done = False
+        
+        q_table = self.openQtableFile()
 
-def get_state_index(state):
-    return int("".join(map(str, state)), 2)
-
-game = SnakeGame()
-
-# Training the model
-for episode in range(num_episodes):
-    state = game.reset()
-    state_index = get_state_index(state)
-    total_reward = 0
-    done = False
-
-    while not done:
-        if random.uniform(0, 1) < epsilon:
-            action = random.randint(0, action_size - 1)
-        else:
+        while not done:
             action = np.argmax(q_table[state_index])
+            state, reward, done = self.step(action)
+            state_index = self.get_state_index(state)
+            total_reward += reward
 
-        next_state, reward, done = game.step(action)
-        next_state_index = get_state_index(next_state)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    done = True
 
-        # Update Q-value
-        q_table[state_index, action] = (q_table[state_index, action] +
-                                        alpha * (reward + gamma * np.max(q_table[next_state_index]) - q_table[state_index, action]))
+            self.render()
+            self.clock.tick(FPS)
 
-        state_index = next_state_index
-        total_reward += reward
+        print(f"Game Over! Total Score: {self.score}")
+        
+        time.sleep(0.5)
 
-    epsilon = max(epsilon_min, epsilon * epsilon_decay)
-    print(f"Episode {episode + 1}: Total Reward = {total_reward}: Total Score = {game.score}")
-
-# Test the trained model
-def play_with_model():
-
-    state = game.reset()
-    state_index = get_state_index(state)
-    print(state_index)
-    total_reward = 0
-    done = False
-
-    while not done:
-        action = np.argmax(q_table[state_index])
-        state, reward, done = game.step(action)
-        state_index = get_state_index(state)
-        total_reward += reward
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                done = True
-
-        game.render()
-        clock.tick(FPS)
-
-    print(f"Game Over! Total Score: {game.score}")
-
-# Initialize pygame
-pygame.init()
-screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
-clock = pygame.time.Clock()
-
-# Run the trained model
-print("Testing the trained model...")
-play_with_model()
-
-pygame.quit()
+        pygame.quit()

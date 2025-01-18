@@ -1,0 +1,62 @@
+# Fichiers spécifiques à Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Environnements virtuels
+venv/
+env/
+ENV/
+*.venv
+*.env
+
+# Configuration de VS Code
+.vscode/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Logs et fichiers temporaires
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.~undo-tree
+
+# Fichiers de configuration ou bases de données temporaires
+*.sqlite3
+*.db
+
+# Caches spécifiques à pip et d'autres outils
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Jetons d'accès et clés
+*.pem
+*.key
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Tests
+coverage/
+.tox/
+.nox/
+.pytest_cache/
+htmlcov/
+
+# Entrées de débogage
+*.coverage
+.cache
+
+# Configurations spécifiques à l'utilisateur
+*.idea/
+*.code-workspace
