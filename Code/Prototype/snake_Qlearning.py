@@ -18,36 +18,36 @@ class SnakeGame:
         self.reset()
 
     def reset(self):
-        self.snake = [(GRID_SIZE * 5, GRID_SIZE * 5)]
+        self.snake = [(5, 5)]
         self.food = self._place_food()
-        self.direction = (0, -GRID_SIZE)
+        self.direction = (0, -1)
         self.score = 0
         return self._get_state()
 
     def _place_food(self):
         while True:
-            food = (random.randint(0, (WINDOW_SIZE // GRID_SIZE) - 1) * GRID_SIZE,
-                    random.randint(0, (WINDOW_SIZE // GRID_SIZE) - 1) * GRID_SIZE)
+            food = (random.randint(0, GRID_SIZE - 1),
+                    random.randint(0, GRID_SIZE - 1))
             if food not in self.snake:
                 return food
 
     def _get_state(self):
         head = self.snake[0]
         # Check for obstacles in all directions
-        danger_up = (head[0], head[1] - GRID_SIZE) in self.snake or head[1] - GRID_SIZE < 0
-        danger_down = (head[0], head[1] + GRID_SIZE) in self.snake or head[1] + GRID_SIZE >= WINDOW_SIZE
-        danger_left = (head[0] - GRID_SIZE, head[1]) in self.snake or head[0] - GRID_SIZE < 0
-        danger_right = (head[0] + GRID_SIZE, head[1]) in self.snake or head[0] + GRID_SIZE >= WINDOW_SIZE
+        danger_up = (head[0], head[1] - 1) in self.snake or head[1] - 1 < 0
+        danger_down = (head[0], head[1] + 1) in self.snake or head[1] + 1 >= GRID_SIZE
+        danger_left = (head[0] - 1, head[1]) in self.snake or head[0] - 1 < 0
+        danger_right = (head[0] + 1, head[1]) in self.snake or head[0] + 1 >= GRID_SIZE
 
         state = [
             danger_up,            # Danger up
             danger_down,          # Danger down
             danger_left,          # Danger left
             danger_right,         # Danger right
-            self.direction == (0, -GRID_SIZE),  # Moving up
-            self.direction == (0, GRID_SIZE),   # Moving down
-            self.direction == (-GRID_SIZE, 0), # Moving left
-            self.direction == (GRID_SIZE, 0),  # Moving right
+            self.direction == (0, -1),  # Moving up
+            self.direction == (0, 1),   # Moving down
+            self.direction == (-1, 0), # Moving left
+            self.direction == (1, 0),  # Moving right
             head[0] < self.food[0],            # Food is to the right
             head[0] > self.food[0],            # Food is to the left
             head[1] < self.food[1],            # Food is below
@@ -65,10 +65,9 @@ class SnakeGame:
         return right in self.snake[1:] or left in self.snake[1:]
         # return front in self.snake[1:] or right in self.snake[1:] or left in self.snake[1:]
 
-
     def step(self, action):
         # Define possible actions: [UP, DOWN, LEFT, RIGHT]
-        directions = [(0, -GRID_SIZE), (0, GRID_SIZE), (-GRID_SIZE, 0), (GRID_SIZE, 0)]
+        directions = [(0, -1), (0, 1), (-1, 0), (1, 0)]
         if action < len(directions) and directions[action] != (-self.direction[0], -self.direction[1]):
             self.direction = directions[action]
 
@@ -77,8 +76,8 @@ class SnakeGame:
         
         # Check collision
         if (new_head in self.snake or
-            new_head[0] < 0 or new_head[0] >= WINDOW_SIZE or
-            new_head[1] < 0 or new_head[1] >= WINDOW_SIZE):
+            new_head[0] < 0 or new_head[0] >= GRID_SIZE or
+            new_head[1] < 0 or new_head[1] >= GRID_SIZE):
             return self._get_state(), -100, True
 
         # Initialize reward
@@ -104,8 +103,8 @@ class SnakeGame:
     def render(self):
         screen.fill(BLACK)
         for segment in self.snake:
-            pygame.draw.rect(screen, GREEN, (*segment, GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(screen, RED, (*self.food, GRID_SIZE, GRID_SIZE))
+            pygame.draw.rect(screen, GREEN, (*tuple(x * 20 for x in segment), WINDOW_SIZE/GRID_SIZE, WINDOW_SIZE/GRID_SIZE))
+        pygame.draw.rect(screen, RED, (*tuple(x * 20 for x in self.food), WINDOW_SIZE/GRID_SIZE, WINDOW_SIZE/GRID_SIZE))
         pygame.display.flip()
 
 # Q-learning parameters
